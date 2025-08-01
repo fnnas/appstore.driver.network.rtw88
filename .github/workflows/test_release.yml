@@ -1,0 +1,179 @@
+name: Test Release
+run-name: ${{ github.actor }} build ${{ github.ref_name }} sha ${{ github.sha }}
+
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  workflow_dispatch:
+    inputs:
+      make_release:
+        description: 'Do you want to create a release?'
+        required: true
+        type: boolean
+        default: false
+
+env:
+  proj_name: "rtw88"
+  rtw88_commit_sha: "549f33c"
+  rtw88_pack_version: "1.0.6"
+jobs:
+  get_rtw88firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        run: |
+          git clone https://github.com/lwfinger/rtw88
+          cd rtw88 && git reset --hard ${{ env.rtw88_commit_sha }}
+      - name: upload firmware
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-firmware
+          path: rtw88/firmware
+  build_6-6-38-trim-92:
+    runs-on: ubuntu-latest
+    container:
+      image: makedie/fnos:kernHead-6.6.38-trim-92
+      options: -v ${{ github.workspace }}:${{ github.workspace }}
+    env:
+      kernel_name: "6.6.38-trim_92"
+    steps:
+      - name: Check out repository code
+        run: |
+          git clone https://github.com/lwfinger/rtw88
+          cd rtw88 && git reset --hard ${{ env.rtw88_commit_sha }}
+      - name: build ko
+        run: |
+          cd rtw88 && make -j`nproc`
+      - name: copy ko
+        run: |
+          mkdir -p upload/${{ env.proj_name }}_${{ env.kernel_name }}
+          cp rtw88/*.ko upload/${{ env.proj_name }}_${{ env.kernel_name }}/
+      - name: upload ko
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-${{ env.kernel_name }}
+          path: upload
+  build_6-12-5-trim-10:
+    runs-on: ubuntu-latest
+    container:
+      image: makedie/fnos:kernHead-6.12.5-trim-10
+      options: -v ${{ github.workspace }}:${{ github.workspace }}
+    env:
+      kernel_name: "6.12.5-trim_10"
+    steps:
+      - name: Check out repository code
+        run: |
+          git clone https://github.com/lwfinger/rtw88
+          cd rtw88 && git reset --hard ${{ env.rtw88_commit_sha }}
+      - name: build ko
+        run: |
+          cd rtw88 && make -j`nproc`
+      - name: copy ko
+        run: |
+          mkdir -p upload/${{ env.proj_name }}_${{ env.kernel_name }}
+          cp rtw88/*.ko upload/${{ env.proj_name }}_${{ env.kernel_name }}/
+      - name: upload ko
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-${{ env.kernel_name }}
+          path: upload
+  build_6-12-18-trim-3:
+    runs-on: ubuntu-latest
+    container:
+      image: makedie/fnos:kernHead-6.12.18-trim-3
+      options: -v ${{ github.workspace }}:${{ github.workspace }}
+    env:
+      kernel_name: "6.12.18-trim_3"
+    steps:
+      - name: Check out repository code
+        run: |
+          git clone https://github.com/lwfinger/rtw88
+          cd rtw88 && git reset --hard ${{ env.rtw88_commit_sha }}
+      - name: build ko
+        run: |
+          cd rtw88 && make -j`nproc`
+      - name: copy ko
+        run: |
+          mkdir -p upload/${{ env.proj_name }}_${{ env.kernel_name }}
+          cp rtw88/*.ko upload/${{ env.proj_name }}_${{ env.kernel_name }}/
+      - name: upload ko
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-${{ env.kernel_name }}
+          path: upload
+  pack_app_tgz:
+    needs:
+      - get_rtw88firmware
+      - build_6-6-38-trim-92
+      - build_6-12-5-trim-10
+      - build_6-12-18-trim-3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: restore firmware
+        uses: actions/download-artifact@v4
+        with:
+            name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-firmware
+            path: app/app/rtw88firmware
+      - name: restore 6-6-38-trim-92
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-6.6.38-trim_92
+          path: app/app/
+      - name: restore 6-12-5-trim-10
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-6.12.5-trim_10
+          path: app/app/
+      - name: restore 6-12-18-trim-3
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-6.12.18-trim_3
+          path: app/app/
+      - name: 打包app.tgz
+        run: |
+          cd app/
+          tar zcvf app.tgz app ui
+          mv app.tgz ../rtw88_driver
+      - name: 打包package
+        run: |
+          tar zcvf appstore.driver.network.rtw88-${{ env.rtw88_pack_version }}-${{ env.rtw88_commit_sha }}.tgz rtw88_driver
+      - name: 上传应用包
+        uses: actions/upload-artifact@master
+        with:
+          name: appstore.driver.network.rtw88-${{ env.rtw88_pack_version }}-${{ env.rtw88_commit_sha }}.tgz
+          path: appstore.driver.network.rtw88-${{ env.rtw88_pack_version }}-${{ env.rtw88_commit_sha }}.tgz
+      - name: Create GitHub Release
+        if: ${{ inputs.make_release }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.rtw88_pack_version }}
+          prerelease: true
+          release_name: "fnnas.appstore.driver.network.rtw88-${{ env.rtw88_pack_version }}-${{ env.rtw88_commit_sha }}"
+
+      - name: Upload Release Assets
+        if: ${{ inputs.make_release }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Uploading release assets..."
+          
+          echo "Uploading appstore.driver.network.rtw88-${{ env.rtw88_pack_version }}-${{ env.rtw88_commit_sha }}.tgz"
+          gh release upload "${{ env.rtw88_pack_version }}" "appstore.driver.network.rtw88-${{ env.rtw88_pack_version }}-${{ env.rtw88_commit_sha }}.tgz" || echo "Failed to upload $file"
+          
+          echo "Upload completed!"
+
+      - name: Verify Uploaded Assets
+        if: ${{ inputs.make_release }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Uploaded assets:"
+          gh release view "${{ env.rtw88_pack_version }}" --json assets -q '.assets[].name'
