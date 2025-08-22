@@ -1,5 +1,5 @@
 name: Test Release
-run-name: ${{ github.actor }} build ${{ github.ref_name }} sha ${{ github.sha }}
+run-name: ${{ github.actor }} build ${{ github.ref_name }} ${{ github.sha }}
 
 permissions:
   contents: write
@@ -21,90 +21,45 @@ env:
   rtw88_commit_sha: "549f33c"
   rtw88_pack_version: "1.0.6"
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      proj_name: ${{ env.proj_name }}
+      rtw88_commit_sha: ${{ env.rtw88_commit_sha }}
+    steps:
+      - run: echo "All set!"
   get_rtw88firmware:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository code
-        run: |
-          git clone https://github.com/lwfinger/rtw88
-          cd rtw88 && git reset --hard ${{ env.rtw88_commit_sha }}
-      - name: upload firmware
-        uses: actions/upload-artifact@master
-        with:
-          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-firmware
-          path: rtw88/firmware
+    uses: ./.github/workflows/get_rtw88firmware.yml
+    secrets: inherit
+    needs:
+      - setup
+    with:
+      proj_name: ${{ needs.setup.outputs.proj_name }}
+      rtw88_commit_sha: ${{ needs.setup.outputs.rtw88_commit_sha }}
   build_6-6-38-trim-92:
-    runs-on: ubuntu-latest
-    container:
-      image: makedie/fnos:kernHead-6.6.38-trim-92
-      options: -v ${{ github.workspace }}:${{ github.workspace }}
-    env:
-      kernel_name: "6.6.38-trim_92"
-    steps:
-      - name: Check out repository code
-        run: |
-          git clone https://github.com/lwfinger/rtw88
-          cd rtw88 && git reset --hard ${{ env.rtw88_commit_sha }}
-      - name: build ko
-        run: |
-          cd rtw88 && make -j`nproc`
-      - name: copy ko
-        run: |
-          mkdir -p upload/${{ env.proj_name }}_${{ env.kernel_name }}
-          cp rtw88/*.ko upload/${{ env.proj_name }}_${{ env.kernel_name }}/
-      - name: upload ko
-        uses: actions/upload-artifact@master
-        with:
-          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-${{ env.kernel_name }}
-          path: upload
+    uses: ./.github/workflows/kernel-6.6.38-trim-92.yml
+    secrets: inherit
+    needs:
+      - setup
+    with:
+      proj_name: ${{ needs.setup.outputs.proj_name }}
+      rtw88_commit_sha: ${{ needs.setup.outputs.rtw88_commit_sha }}
   build_6-12-5-trim-10:
-    runs-on: ubuntu-latest
-    container:
-      image: makedie/fnos:kernHead-6.12.5-trim-10
-      options: -v ${{ github.workspace }}:${{ github.workspace }}
-    env:
-      kernel_name: "6.12.5-trim_10"
-    steps:
-      - name: Check out repository code
-        run: |
-          git clone https://github.com/lwfinger/rtw88
-          cd rtw88 && git reset --hard ${{ env.rtw88_commit_sha }}
-      - name: build ko
-        run: |
-          cd rtw88 && make -j`nproc`
-      - name: copy ko
-        run: |
-          mkdir -p upload/${{ env.proj_name }}_${{ env.kernel_name }}
-          cp rtw88/*.ko upload/${{ env.proj_name }}_${{ env.kernel_name }}/
-      - name: upload ko
-        uses: actions/upload-artifact@master
-        with:
-          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-${{ env.kernel_name }}
-          path: upload
+    uses: ./.github/workflows/kernel-6.12.5-trim-10.yml
+    secrets: inherit
+    needs:
+      - setup
+    with:
+      proj_name: ${{ needs.setup.outputs.proj_name }}
+      rtw88_commit_sha: ${{ needs.setup.outputs.rtw88_commit_sha }}
   build_6-12-18-trim-3:
-    runs-on: ubuntu-latest
-    container:
-      image: makedie/fnos:kernHead-6.12.18-trim-3
-      options: -v ${{ github.workspace }}:${{ github.workspace }}
-    env:
-      kernel_name: "6.12.18-trim_3"
-    steps:
-      - name: Check out repository code
-        run: |
-          git clone https://github.com/lwfinger/rtw88
-          cd rtw88 && git reset --hard ${{ env.rtw88_commit_sha }}
-      - name: build ko
-        run: |
-          cd rtw88 && make -j`nproc`
-      - name: copy ko
-        run: |
-          mkdir -p upload/${{ env.proj_name }}_${{ env.kernel_name }}
-          cp rtw88/*.ko upload/${{ env.proj_name }}_${{ env.kernel_name }}/
-      - name: upload ko
-        uses: actions/upload-artifact@master
-        with:
-          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-${{ env.kernel_name }}
-          path: upload
+    uses: ./.github/workflows/kernel-6.12.18-trim-3.yml
+    secrets: inherit
+    needs:
+      - setup
+    with:
+      proj_name: ${{ needs.setup.outputs.proj_name }}
+      rtw88_commit_sha: ${{ needs.setup.outputs.rtw88_commit_sha }}
   pack_app_tgz:
     needs:
       - get_rtw88firmware
@@ -115,6 +70,7 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
+
       - name: restore firmware
         uses: actions/download-artifact@v4
         with:
@@ -135,6 +91,7 @@ jobs:
         with:
           name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-6.12.18-trim_3
           path: app/app/
+
       - name: 打包app.tgz
         run: |
           cd app/

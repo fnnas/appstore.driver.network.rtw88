@@ -1,0 +1,29 @@
+name: get_rtw88firmware
+permissions:
+  contents: write  # Allow writing to repository contents (for pushing tags)
+  actions: write   # Allows triggering actions
+
+on:
+  workflow_call:  # This allows this workflow to be called from another workflow
+    inputs:
+      proj_name:
+        required: true
+        type: string
+        default: "rtw88"
+      rtw88_commit_sha:
+        required: true
+        type: string
+        default: "HEAD"
+jobs:
+  get_rtw88firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        run: |
+          git clone https://github.com/lwfinger/rtw88
+          cd rtw88 && git reset --hard ${{ inputs.rtw88_commit_sha }}
+      - name: upload firmware
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ inputs.proj_name }}-${{ inputs.rtw88_commit_sha }}-firmware
+          path: rtw88/firmware
