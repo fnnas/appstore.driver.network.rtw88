@@ -28,16 +28,20 @@ start)
     cp -rf ${PACKAGE_BASE}/app/rtw88firmware/* ${rtw88_firmware_dir}/
     
     mkdir -p /lib/modules/${nowKernelVer}/updates/dkms/rtw88
+
+    vermagic=$(modinfo -F vermagic "$(lsmod | awk 'NR==2{print $1}')")
+    echo "$vermagic"
+
     if [[ `uname -m` == "aarch64" ]]; then
-        echo "is aarch64"
-        case "$(uname -r)" in
-        6.12.41-trim)
-          echo "case in 6.12.41-trim aarch64"
+        echo "is aarch64 and not uefi boot"
+        case "$vermagic" in
+        "6.12.41-trim SMP preempt mod_unload aarch64")
           mkdir -p /lib/modules/6.12.41-trim/updates/dkms/rtw88
           cp -rf ${PACKAGE_BASE}/app/rtw88_6.12.41-trim-27-arm64-rk35xx/* /lib/modules/6.12.41-trim/updates/dkms/rtw88/
           ;;
         esac
     fi
+
     case "$nowKernelVer" in
         6.6.38-trim)
             if [[ ${nowKernelBuildNum} -lt 92 ]]; then
