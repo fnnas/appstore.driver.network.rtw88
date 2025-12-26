@@ -39,6 +39,10 @@ start)
           mkdir -p /lib/modules/6.12.41-trim/updates/dkms/rtw88
           cp -rf ${PACKAGE_BASE}/app/rtw88_6.12.41-trim-27-arm64-rk35xx/* /lib/modules/6.12.41-trim/updates/dkms/rtw88/
           ;;
+        "6.12.41-trim SMP mod_unload modversions aarch64")
+          mkdir -p /lib/modules/6.12.41-trim/updates/dkms/rtw88
+          cp -rf ${PACKAGE_BASE}/app/rtw88_6.12.41-trim-27-arm64-armsr/* /lib/modules/6.12.41-trim/updates/dkms/rtw88/
+          ;;
         esac
     fi
 

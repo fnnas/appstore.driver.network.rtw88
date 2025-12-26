@@ -19,7 +19,7 @@ on:
 env:
   proj_name: "rtw88"
   rtw88_commit_sha: "f27b6a3"
-  rtw88_pack_version: "1.0.8"
+  rtw88_pack_version: "1.0.9"
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -68,6 +68,14 @@ jobs:
     with:
       proj_name: ${{ needs.setup.outputs.proj_name }}
       rtw88_commit_sha: ${{ needs.setup.outputs.rtw88_commit_sha }}
+  build_6-12-41-trim-27-arm64-armsr:
+    uses: ./.github/workflows/kernel-6.12.41-trim-27-arm64-armsr.yml
+    secrets: inherit
+    needs:
+      - setup
+    with:
+      proj_name: ${{ needs.setup.outputs.proj_name }}
+      rtw88_commit_sha: ${{ needs.setup.outputs.rtw88_commit_sha }}
   pack_app_tgz:
     needs:
       - get_rtw88firmware
@@ -75,6 +83,7 @@ jobs:
       - build_6-12-5-trim-10
       - build_6-12-18-trim-3
       - build_6-12-41-trim-27-arm64-rk35xx
+      - build_6-12-41-trim-27-arm64-armsr
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
@@ -100,10 +109,15 @@ jobs:
         with:
           name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-6.12.18-trim_3
           path: app/app/
-      - name: restore 6-12-18-trim-3
+      - name: restore 6-12-41-trim-27-arm64-rk35xx
         uses: actions/download-artifact@v4
         with:
           name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-6.12.41-trim-27-arm64-rk35xx
+          path: app/app/
+      - name: restore 6-12-41-trim-27-arm64-armsr
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.proj_name }}-${{ env.rtw88_commit_sha }}-6.12.41-trim-27-arm64-armsr
           path: app/app/
       - name: 替换架构及版本号信息
         run: |

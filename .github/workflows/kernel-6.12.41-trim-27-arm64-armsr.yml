@@ -1,0 +1,41 @@
+name: kernel-6.12.41-trim-27-arm64-armsr.yml
+permissions:
+  contents: write  # Allow writing to repository contents (for pushing tags)
+  actions: write   # Allows triggering actions
+
+on:
+  workflow_call:  # This allows this workflow to be called from another workflow
+    inputs:
+      proj_name:
+        required: true
+        type: string
+        default: "rtw88"
+      rtw88_commit_sha:
+        required: true
+        type: string
+        default: "HEAD"
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: makedie/fnos:kernHead-6.12.41-trim-27-arm64-armsr
+      options: -v ${{ github.workspace }}:${{ github.workspace }}
+    env:
+      kernel_name: "6.12.41-trim-27-arm64-armsr"
+    steps:
+      - name: Check out repository code
+        run: |
+          git clone https://github.com/lwfinger/rtw88
+          cd rtw88 && git reset --hard ${{ inputs.rtw88_commit_sha }}
+      - name: build ko
+        run: |
+          cd rtw88 && make -j`nproc`
+      - name: copy ko
+        run: |
+          mkdir -p upload/${{ inputs.proj_name }}_${{ env.kernel_name }}
+          cp rtw88/*.ko upload/${{ inputs.proj_name }}_${{ env.kernel_name }}/
+      - name: upload ko
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ inputs.proj_name }}-${{ inputs.rtw88_commit_sha }}-${{ env.kernel_name }}
+          path: upload
