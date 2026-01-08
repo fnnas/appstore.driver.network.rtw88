@@ -1,5 +1,5 @@
 name: Test Release
-run-name: ${{ github.actor }} build ${{ github.ref_name }} ${{ github.sha }}
+run-name: ${{ github.ref_name }} ${{ github.sha }}
 
 permissions:
   contents: write
@@ -18,8 +18,8 @@ on:
 
 env:
   proj_name: "rtw88"
-  rtw88_commit_sha: "f27b6a3"
-  rtw88_pack_version: "1.0.9"
+  rtw88_commit_sha: "2dd31d9"
+  rtw88_pack_version: "1.0.9-2"
 jobs:
   setup:
     runs-on: ubuntu-latest
