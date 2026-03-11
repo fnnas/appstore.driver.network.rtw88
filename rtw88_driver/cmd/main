@@ -7,7 +7,7 @@ fi
 PACKAGE_BASE=${TRIM_APPDEST}
 rtw88_firmware_dir="/usr/lib/firmware/rtw88"
 
-supportKernelList=("6.6.38-trim" "6.12.5-trim" "6.12.18-trim" "6.12.41-trim")
+supportKernelList=("6.6.38-trim" "6.12.5-trim" "6.12.18-trim" "6.12.41-trim" "6.18.6-trim")
 
 nowKernelVer=`uname -r`
 nowKernelBuildNum=`uname -v| grep -oP '(?<=#)\d+'`
@@ -72,6 +72,11 @@ start)
         6.12.18-trim)
             echo "debug 6.12.18-trim"
             cp -rf ${PACKAGE_BASE}/app/rtw88_6.12.18-trim_3/* /lib/modules/6.12.18-trim/updates/dkms/rtw88/
+            ;;
+
+        6.18.6-trim)
+            echo "debug 6.18.6-trim"
+            cp -rf ${PACKAGE_BASE}/app/rtw88_6.18.6-trim-297-amd64/* /lib/modules/6.18.6-trim/updates/dkms/rtw88/
             ;;
 
         *)
